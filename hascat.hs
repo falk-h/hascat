@@ -26,7 +26,7 @@ defaultFrequency = 2
 
 -- |Version number
 version :: String
-version = "1.0.0"
+version = "1.0.1"
 
 -- |Main
 main :: IO ()
@@ -60,7 +60,13 @@ printVersion = do
 printUsage :: IO ()
 printUsage = do
   name <- getProgName
-  handleInput defaultFrequency $ "Usage: " ++ name ++ " [OPTION]... [FILE]..."
+  handleInput defaultFrequency $ unlines ["Usage: " ++ name ++ " [OPTION]... [FILE]...",
+                                        "",
+                                        "Concatenate files or standard input to standard output.",
+                                        "With no FILE, read standard input.",
+                                        "",
+                                        "  -h, --help\t\tPrint this help message",
+                                        "  -v, --version\t\tPrint version information"]
 
 -- |Rainbowifies the input and prints to stdout
 -- f: the color frequency
