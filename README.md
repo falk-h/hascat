@@ -1,4 +1,4 @@
-# <font color=#ff0000>h</font><font color=#d47a2a>a</font><font color=#aad655>s</font><font color=#7ffe7f>c</font><font color=#55e7aa>a</font><font color=#2a98d4>t</font>
+# hascat
 
 It's `cat` but with rainbows and monads.
 
@@ -21,8 +21,9 @@ It's `cat` but with rainbows and monads.
     Concatenate files or standard input to standard output.
     With no FILE, read standard input.
 
-    -h, --help		Print this help message
-    -v, --version		Print version information
+    -F <f>              Ranbow frequency (default: 2)
+    -h, --help          Print this help message
+    -v, --version       Print version information
 
 ## Todo
 

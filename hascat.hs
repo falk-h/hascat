@@ -65,6 +65,7 @@ printUsage = do
                                         "Concatenate files or standard input to standard output.",
                                         "With no FILE, read standard input.",
                                         "",
+                                        "  -F <f>\t\tRanbow frequency (default: 2)",
                                         "  -h, --help\t\tPrint this help message",
                                         "  -v, --version\t\tPrint version information"]
 
