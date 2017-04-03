@@ -11,6 +11,7 @@ type Color = [Int]
 type AES = String
 
 -- |Splits a line into Strings of a specific length.
+-- (Currently not used, though it will probably come in handy later)
 -- The last returned String may be shorter than the others
 -- Takes two arguments:
 -- n: how long the split strings should be
