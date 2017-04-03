@@ -5,8 +5,8 @@ It's `cat` but with rainbows and monads.
 ## Dependencies
 
 - [A terminal emulator that supports truecolor](https://gist.github.com/XVilka/8346728#now-supporting-truecolour)
-- [ghc](https://www.haskell.org/downloads/linux)
-- [System.Random](https://hackage.haskell.org/package/random)
+- [ghc](https://www.haskell.org/downloads/linux) (build)
+- [System.Random](https://hackage.haskell.org/package/random) (build)
 
 ## Installation
 
