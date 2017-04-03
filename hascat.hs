@@ -27,26 +27,33 @@ defaultFrequency = 2
 
 -- |Version number
 version :: String
-version = "1.0.1"
+version = "1.0.2"
 
 -- |Main
+-- Gets command line arguments, and decided what to do.
 main :: IO ()
 main = do 
   args <- getArgs
   case args of
+    -- Print version number if -v or --version is somewhere in the args.
     _ | "-v" `elem` args -> printVersion
     _ | "--version" `elem` args -> printVersion
+    -- Print usage help if -h or --help is somewhere in the args.
     _ | "-h" `elem` args -> printUsage
     _ | "--help" `elem` args -> printUsage
+    -- Get the user defined frequency if the args are -F <f>, and read from stdin.
     ["-F",freq] | [(frequency, _)] <- reads freq -> do
       stdin <- getContents
       rainbowPrint frequency stdin
+    -- Read from stdin if args are empty.
     [] -> do
       stdin <- getContents
       rainbowPrint defaultFrequency stdin
+    -- Read from files with specified frequency if args start with -F <f>.
     "-F":freq:files -> do
       fileContents <- mapM readFile files 
       rainbowPrint (read freq) $ concat fileContents
+    -- Otherwise, read from files.
     files -> do
       fileContents <- mapM readFile files 
       rainbowPrint defaultFrequency $ concat fileContents
@@ -81,31 +88,30 @@ rainbowPrint f s = do
 
 -- |Inserts rainbow escape sequences into a line
 -- Takes three arguments:
--- o: the number of characters betweeen changing colours
--- c: the next colour of the rainbow to insert (0-255)
+-- c: the color to start with
+-- f: how far to step in the colors array for every character
 -- s: the line to rainbowify
 rainbowLn :: Int -> Int -> String -> String
 rainbowLn c f s = concat $ zipWith (:) s [ getEscape e | e <- [c,(c+f)..((length s * f) + c)] ]
 
 -- |Applies ranbowLn to multiple lines.
 -- Takes four arguments:
--- c: The starting colour
--- vo: the vertical offset
--- ho: the horizontal offset
+-- c: the color to start with
+-- f: how far to step in the colors array for every line
 -- ls: the lines to rainbowify 
 rainbowLns :: Int -> Int -> [String] -> [String]
 rainbowLns _ _ [] = []
 rainbowLns c f ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+f) f (tail ls)
 
--- |Function to get an AES from the escapes list
+-- |Trivial function to get an AES from the escapes list
 getEscape :: Int -> AES
 getEscape n = escapes !! n
 
--- |Infinitely long list containing the colors of the rainbow.
+-- |Infinitely long list containing all the colors of the rainbow.
 escapes :: [AES]
 escapes = cycle $ map (cStr . colors) [0..257]
 
--- |Gets Color 0-257 in the rainbow
+-- |Calculates Color 0-257 in the rainbow
 colors :: Int -> Color
 colors n | h == 0 = [255, t, 0]
          | h == 1 = [q, 255, 0]
@@ -124,7 +130,8 @@ colors n | h == 0 = [255, t, 0]
 reset :: AES
 reset = "\ESC[0m"
         
--- |Gets the AES for a given Color.
+-- |Constructs the AES for a given Color.
+-- c: an array containing the values (0-255) for red, green and blue
 cStr :: Color -> AES
 cStr [r, g, b] = "\ESC[38;2;" ++ show r ++ ';':(show g ++ ';':(show b ++ "m"))
 cStr c         = error $ "cStr: invalid Color: " ++ show c
