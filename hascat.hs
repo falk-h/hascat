@@ -39,28 +39,28 @@ main = do
     _ | "--help" `elem` args -> printUsage
     ["-F",freq] | [(frequency, _)] <- reads freq -> do
       stdin <- getContents
-      handleInput frequency stdin
+      rainbowPrint frequency stdin
     [] -> do
       stdin <- getContents
-      handleInput defaultFrequency stdin
+      rainbowPrint defaultFrequency stdin
     "-F":freq:files -> do
       fileContents <- mapM readFile files 
-      handleInput (read freq) $ concat fileContents
+      rainbowPrint (read freq) $ concat fileContents
     files -> do
       fileContents <- mapM readFile files 
-      handleInput defaultFrequency $ concat fileContents
+      rainbowPrint defaultFrequency $ concat fileContents
 
--- |Passes version information to handleInput
+-- |Passes version information to rainbowPrint
 printVersion :: IO ()
 printVersion = do
   name <- getProgName
-  handleInput defaultFrequency $ name ++ " " ++ version
+  rainbowPrint defaultFrequency $ name ++ " " ++ version
 
--- |Passes usage information to handleInput
+-- |Passes usage information to rainbowPrint
 printUsage :: IO ()
 printUsage = do
   name <- getProgName
-  handleInput defaultFrequency $ unlines ["Usage: " ++ name ++ " [OPTION]... [FILE]...",
+  rainbowPrint defaultFrequency $ unlines ["Usage: " ++ name ++ " [OPTION]... [FILE]...",
                                         "",
                                         "Concatenate files or standard input to standard output.",
                                         "With no FILE, read standard input.",
@@ -71,8 +71,8 @@ printUsage = do
 -- |Rainbowifies the input and prints to stdout
 -- f: the color frequency
 -- s: the lines in the input
-handleInput :: Int -> String -> IO ()
-handleInput f s = do
+rainbowPrint :: Int -> String -> IO ()
+rainbowPrint f s = do
   rand <- getStdRandom (randomR (0, 257))
   putStr $ unlines $ rainbowLns rand f $ lines s
   putStr reset
