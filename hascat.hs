@@ -132,7 +132,7 @@ cStr c         = error $ "cStr: invalid Color: " ++ show c
 
 -- |Version number
 version :: String
-version = "1.1.0"
+version = "1.1.1"
 
 -- |Help text
 helpText :: String
