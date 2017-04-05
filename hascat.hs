@@ -1,8 +1,18 @@
 -- |Concatenates and rainbowifies files.
 module Main where
 
+import Options.Applicative
+import Data.Semigroup ((<>))
 import System.Environment
 import System.Random
+
+-- |Let handleArgs decide on what to do.
+main :: IO()
+main = handleArgs =<< execParser opts
+  where 
+    opts = info sample
+      ( fullDesc )
+
 
 -- |An array containing Red, Green and Blue values.
 type Color = [Int]
@@ -20,70 +30,54 @@ type AES = String
 -- splitN _ [] = []
 -- splitN n s | n >= length s = [s]
 --           | otherwise = take n s : splitN n (drop n s)
+                     
 
--- |Default color frequency is 2
-defaultFrequency :: Int
-defaultFrequency = 2
+data Sample = Sample
+  { showHelp    :: Bool,
+    showVersion :: Bool,
+    freq        :: Int,
+    files       :: [String] }
 
--- |Version number
-version :: String
-version = "1.0.2"
+sample :: Parser Sample
+sample = Sample
+      <$> switch
+          ( long "help"
+         <> short 'h' )
+      <*> switch
+          ( long "version"
+         <> short 'v' )
+      <*> option auto
+          ( long "freq"
+         <> short 'F'
+         <> value 2 )
+      <*> many (argument str (metavar "FILE")) -- 0 or more arguments
 
--- |Main
--- Gets command line arguments, and decided what to do.
-main :: IO ()
-main = do 
-  args <- getArgs
-  case args of
-    -- Print version number if -v or --version is somewhere in the args.
-    _ | "-v" `elem` args -> printVersion
-    _ | "--version" `elem` args -> printVersion
-    -- Print usage help if -h or --help is somewhere in the args.
-    _ | "-h" `elem` args -> printUsage
-    _ | "--help" `elem` args -> printUsage
-    -- Get the user defined frequency if the args are -F <f>, and read from stdin.
-    ["-F",freq] | [(frequency, _)] <- reads freq -> do
-      stdin <- getContents
-      rainbowPrint frequency stdin
-    -- Read from stdin if args are empty.
-    [] -> do
-      stdin <- getContents
-      rainbowPrint defaultFrequency stdin
-    -- Read from files with specified frequency if args start with -F <f>.
-    "-F":freq:files -> do
-      fileContents <- mapM readFile files 
-      rainbowPrint (read freq) $ concat fileContents
-    -- Otherwise, read from files.
-    files -> do
-      fileContents <- mapM readFile files 
-      rainbowPrint defaultFrequency $ concat fileContents
+-- |Decodes arguments and decides on what to do.
+handleArgs :: Sample -> IO ()
 
--- |Passes version information to rainbowPrint
-printVersion :: IO ()
-printVersion = do
-  name <- getProgName
-  rainbowPrint defaultFrequency $ name ++ " " ++ version
+-- Print help text if -h or --help is passed
+handleArgs (Sample True _ freq _)      = rainbowPrint freq $ helpText
 
--- |Passes usage information to rainbowPrint
-printUsage :: IO ()
-printUsage = do
-  name <- getProgName
-  rainbowPrint defaultFrequency $ unlines ["Usage: " ++ name ++ " [OPTION]... [FILE]...",
-                                        "",
-                                        "Concatenate files or standard input to standard output.",
-                                        "With no FILE, read standard input.",
-                                        "",
-                                        "  -F <f>\t\tRanbow frequency (default: 2)",
-                                        "  -h, --help\t\tPrint this help message",
-                                        "  -v, --version\t\tPrint version information"]
+-- Print version information if -v or --version is passed
+handleArgs (Sample _ True freq _) = rainbowPrint freq $ "hascat " ++ version
+
+-- Call rainbowPrint with stdin if we didn't get any files
+handleArgs (Sample _ _ freq []) = do 
+  stdin <- getContents
+  rainbowPrint freq stdin
+
+-- Call rainbowPrint with the concatenated file contents
+handleArgs (Sample _ _ freq files) = do
+  fileContents <- mapM readFile files 
+  rainbowPrint freq $ concat fileContents
 
 -- |Rainbowifies the input and prints to stdout
 -- f: the color frequency
 -- s: the lines in the input
 rainbowPrint :: Int -> String -> IO ()
-rainbowPrint f s = do
+rainbowPrint freq input = do
   rand <- getStdRandom (randomR (0, 257))
-  putStr $ unlines $ rainbowLns rand f $ lines s
+  putStr $ unlines $ rainbowLns rand freq $ lines input
   putStr reset
 
 -- |Inserts rainbow escape sequences into a line
@@ -135,3 +129,18 @@ reset = "\ESC[0m"
 cStr :: Color -> AES
 cStr [r, g, b] = "\ESC[38;2;" ++ show r ++ ';':(show g ++ ';':(show b ++ "m"))
 cStr c         = error $ "cStr: invalid Color: " ++ show c
+
+-- |Version number
+version :: String
+version = "1.1.0"
+
+-- |Help text
+helpText :: String
+helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq ARG] [FILE]",
+                     "",
+                     "Concatenate files or standard input to standard output.",
+                     "With no FILE, read standard input.",
+                     "",
+                     "  -F <f>                Ranbow frequency (default: 2)",
+                     "  -h, --help            Print this help message",
+                     "  -v, --version         Print version information" ]
