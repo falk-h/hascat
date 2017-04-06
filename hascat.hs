@@ -63,30 +63,35 @@ sample = Sample
 handleArgs :: Sample -> IO ()
 
 -- Print help text if -h or --help is passed
-handleArgs (Sample True _ freq seed _)      = rainbowPrint freq seed helpText
+handleArgs (Sample True _ f s _)      = rainbowPrint f s helpText
 
 -- Print version information if -v or --version is passed
-handleArgs (Sample _ True freq seed _) = rainbowPrint freq seed $ "hascat " ++ version
+handleArgs (Sample _ True f s _) = rainbowPrint f s $ "hascat " ++ version
 
 -- Call rainbowPrint with stdin if we didn't get any files
-handleArgs (Sample _ _ freq seed []) = do 
+handleArgs (Sample _ _ f s []) = do 
   stdin <- getContents
-  rainbowPrint freq seed stdin
+  rainbowPrint f s stdin
 
 -- Call rainbowPrint with the concatenated file contents
-handleArgs (Sample _ _ freq seed files) = do
-  fileContents <- mapM readFile files 
-  rainbowPrint freq seed $ concat fileContents
+handleArgs (Sample _ _ f s fs) = do
+  fileContents <- traverse getInput fs 
+  rainbowPrint f s $ concat fileContents
 
 -- |Rainbowifies the input and prints to stdout
 -- f: the color frequency
 -- s: the lines in the input
 rainbowPrint :: Int -> Int -> String -> IO ()
-rainbowPrint freq seed input = do
-  gen <- if seed == 0 then getStdGen else return $ mkStdGen seed
-  putStr $ unlines $ rainbowLns (rand gen) freq $ lines input
+rainbowPrint f s input = do
+  gen <- if s == 0 then getStdGen else return $ mkStdGen s
+  putStr $ unlines $ rainbowLns (rand gen) f $ lines input
   putStr reset
     where rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number
+
+-- |Reads stdin on "-"
+getInput :: String -> IO String
+getInput "-"  = getContents 
+getInput file = readFile file
 
 -- |Inserts rainbow escape sequences into a line
 -- Takes three arguments:
@@ -140,7 +145,7 @@ cStr c         = error $ "cStr: invalid Color: " ++ show c
 
 -- |Version number
 version :: String
-version = "1.2.1"
+version = "1.3.0"
 
 -- |Help text
 helpText :: String
@@ -148,6 +153,7 @@ helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [
                      "",
                      "Concatenate files or standard input to standard output.",
                      "With no FILE, read standard input.",
+                     "The FILE \"-\" represents stardard input.",
                      "",
                      "  -F, --freq <f>        Rainbow frequency (default: 2)",
                      "  -S, --seed <s>        RNG seed, 0 means random (default: 0)",

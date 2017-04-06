@@ -22,6 +22,7 @@ It's `cat` but with rainbows and monads.
     
     Concatenate files or standard input to standard output.
     With no FILE, read standard input.
+    The FILE "-" represents stardard input.
 
       -F, --freq <f>      Ranbow frequency (default: 2)
       -S, --seed <s>      RNG seed, 0 means random (default: 0)
