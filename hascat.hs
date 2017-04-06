@@ -3,7 +3,6 @@ module Main where
 
 import Options.Applicative
 import Data.Semigroup ((<>))
-import System.Environment
 import System.Random
 
 -- |Let handleArgs decide on what to do.
@@ -11,7 +10,7 @@ main :: IO()
 main = handleArgs =<< execParser opts
   where 
     opts = info sample
-      ( fullDesc )
+      fullDesc
 
 
 -- |An array containing Red, Green and Blue values.
@@ -36,8 +35,10 @@ data Sample = Sample
   { showHelp    :: Bool,
     showVersion :: Bool,
     freq        :: Int,
+    seed        :: Int,
     files       :: [String] }
 
+-- |The argument parser
 sample :: Parser Sample
 sample = Sample
       <$> switch
@@ -49,36 +50,43 @@ sample = Sample
       <*> option auto
           ( long "freq"
          <> short 'F'
-         <> value 2 )
-      <*> many (argument str (metavar "FILE")) -- 0 or more arguments
+         <> value 2 
+         <> metavar "<f>" )
+      <*> option auto
+          ( long "seed"
+         <> short 'S'
+         <> value 0 
+         <> metavar "<s>" )
+      <*> many (argument str (metavar "FILE")) -- 0 or more file arguments
 
 -- |Decodes arguments and decides on what to do.
 handleArgs :: Sample -> IO ()
 
 -- Print help text if -h or --help is passed
-handleArgs (Sample True _ freq _)      = rainbowPrint freq $ helpText
+handleArgs (Sample True _ freq seed _)      = rainbowPrint freq seed helpText
 
 -- Print version information if -v or --version is passed
-handleArgs (Sample _ True freq _) = rainbowPrint freq $ "hascat " ++ version
+handleArgs (Sample _ True freq seed _) = rainbowPrint freq seed $ "hascat " ++ version
 
 -- Call rainbowPrint with stdin if we didn't get any files
-handleArgs (Sample _ _ freq []) = do 
+handleArgs (Sample _ _ freq seed []) = do 
   stdin <- getContents
-  rainbowPrint freq stdin
+  rainbowPrint freq seed stdin
 
 -- Call rainbowPrint with the concatenated file contents
-handleArgs (Sample _ _ freq files) = do
+handleArgs (Sample _ _ freq seed files) = do
   fileContents <- mapM readFile files 
-  rainbowPrint freq $ concat fileContents
+  rainbowPrint freq seed $ concat fileContents
 
 -- |Rainbowifies the input and prints to stdout
 -- f: the color frequency
 -- s: the lines in the input
-rainbowPrint :: Int -> String -> IO ()
-rainbowPrint freq input = do
-  rand <- getStdRandom (randomR (0, 257))
-  putStr $ unlines $ rainbowLns rand freq $ lines input
+rainbowPrint :: Int -> Int -> String -> IO ()
+rainbowPrint freq seed input = do
+  gen <- if seed == 0 then getStdGen else return $ mkStdGen seed
+  putStr $ unlines $ rainbowLns (rand gen) freq $ lines input
   putStr reset
+    where rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number
 
 -- |Inserts rainbow escape sequences into a line
 -- Takes three arguments:
@@ -132,15 +140,16 @@ cStr c         = error $ "cStr: invalid Color: " ++ show c
 
 -- |Version number
 version :: String
-version = "1.1.1"
+version = "1.2.1"
 
 -- |Help text
 helpText :: String
-helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq ARG] [FILE]",
+helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>] [FILE]",
                      "",
                      "Concatenate files or standard input to standard output.",
                      "With no FILE, read standard input.",
                      "",
-                     "  -F <f>                Ranbow frequency (default: 2)",
+                     "  -F, --freq <f>        Rainbow frequency (default: 2)",
+                     "  -S, --seed <s>        RNG seed, 0 means random (default: 0)",
                      "  -h, --help            Print this help message",
                      "  -v, --version         Print version information" ]
