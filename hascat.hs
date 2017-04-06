@@ -16,7 +16,7 @@ main = handleArgs =<< execParser opts
 -- |An array containing Red, Green and Blue values.
 type Color = [Int]
 
--- |ANSI Escape Sequence
+-- |ANSI Escape Sequence.
 type AES = String
 
 -- |Splits a line into Strings of a specific length.
@@ -36,9 +36,10 @@ data Sample = Sample
     showVersion :: Bool,
     freq        :: Int,
     seed        :: Int,
+    vfreq       :: Int,
     files       :: [String] }
 
--- |The argument parser
+-- |The argument parser.
 sample :: Parser Sample
 sample = Sample
       <$> switch
@@ -57,44 +58,49 @@ sample = Sample
          <> short 'S'
          <> value 0 
          <> metavar "<s>" )
-      <*> many (argument str (metavar "FILE")) -- 0 or more file arguments
+      <*> option auto
+          ( long "vfreq"
+         <> short 'V'
+         <> value 2 
+         <> metavar "<v>" )
+      <*> many (argument str (metavar "FILE")) -- 0 or more file arguments.
 
 -- |Decodes arguments and decides on what to do.
 handleArgs :: Sample -> IO ()
 
--- Print help text if -h or --help is passed
-handleArgs (Sample True _ f s _)      = rainbowPrint f s helpText
+-- Print help text if -h or --help is passed.
+handleArgs (Sample True _ f s v _)      = rainbowPrint f s v helpText
 
--- Print version information if -v or --version is passed
-handleArgs (Sample _ True f s _) = rainbowPrint f s $ "hascat " ++ version
+-- Print version information if -v or --version is passed.
+handleArgs (Sample _ True f s v _) = rainbowPrint f s v $ "hascat " ++ version
 
--- Call rainbowPrint with stdin if we didn't get any files
-handleArgs (Sample _ _ f s []) = do 
+-- Call rainbowPrint with stdin if we didn't get any files.
+handleArgs (Sample _ _ f s v []) = do 
   stdin <- getContents
-  rainbowPrint f s stdin
+  rainbowPrint f s v stdin
 
--- Call rainbowPrint with the concatenated file contents
-handleArgs (Sample _ _ f s fs) = do
+-- Call rainbowPrint with the concatenated file contents.
+handleArgs (Sample _ _ f s v fs) = do
   fileContents <- traverse getInput fs 
-  rainbowPrint f s $ concat fileContents
+  rainbowPrint f s v $ concat fileContents
 
--- |Rainbowifies the input and prints to stdout
+-- |Rainbowifies the input and prints to stdout.
 -- f: the color frequency
 -- s: the lines in the input
-rainbowPrint :: Int -> Int -> String -> IO ()
-rainbowPrint f s input = do
+rainbowPrint :: Int -> Int -> Int -> String -> IO ()
+rainbowPrint f s v input = do
   gen <- if s == 0 then getStdGen else return $ mkStdGen s
-  putStr $ unlines $ rainbowLns (rand gen) f $ lines input
+  putStr $ unlines $ rainbowLns (rand v gen) f v $ lines input
   putStr reset
-    where rand :: StdGen -> Int
-          rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number
+    where rand :: Int -> StdGen -> Int
+          rand v g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
 
 -- |Reads stdin on "-"
 getInput :: String -> IO String
 getInput "-"  = getContents 
 getInput file = readFile file
 
--- |Inserts rainbow escape sequences into a line
+-- |Inserts rainbow escape sequences into a line.
 -- Takes three arguments:
 -- c: the color to start with
 -- f: how far to step in the colors array for every character
@@ -105,21 +111,23 @@ rainbowLn c f s = concat $ zipWith (:) s [ getEscape e | e <- [c,(c+f)..((length
 -- |Applies ranbowLn to multiple lines.
 -- Takes four arguments:
 -- c: the color to start with
--- f: how far to step in the colors array for every line
+-- f: how far to step in the colors array for every character
+-- h: how far to step in the colors array for every line
 -- ls: the lines to rainbowify 
-rainbowLns :: Int -> Int -> [String] -> [String]
-rainbowLns _ _ [] = []
-rainbowLns c f ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+f) f (tail ls)
+rainbowLns :: Int -> Int -> Int -> [String] -> [String]
+rainbowLns _ _ _ [] = []
+rainbowLns c f v ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+v) f v (tail ls)
 
--- |Trivial function to get an AES from the escapes list
+-- |Function to get an AES from the escapes list.
+-- abs is needed to avoid negative index errors when vfreq is negative.
 getEscape :: Int -> AES
-getEscape n = escapes !! n
+getEscape n = escapes !! abs n
 
 -- |Infinitely long list containing all the colors of the rainbow.
 escapes :: [AES]
 escapes = cycle $ map (cStr . colors) [0..257]
 
--- |Calculates Color 0-257 in the rainbow
+-- |Calculates Color 0-257 in the rainbow.
 colors :: Int -> Color
 colors n | h == 0 = [255, t, 0]
          | h == 1 = [q, 255, 0]
@@ -144,19 +152,21 @@ cStr :: Color -> AES
 cStr [r, g, b] = "\ESC[38;2;" ++ show r ++ ';':(show g ++ ';':(show b ++ "m"))
 cStr c         = error $ "cStr: invalid Color: " ++ show c
 
--- |Version number
+-- |Version number.
 version :: String
-version = "1.3.0"
+version = "1.4.0"
 
--- |Help text
+-- |Help text.
 helpText :: String
-helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>] [FILE]",
+helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>]",
+                     "              [-V|--vfreq <v>] [FILE]",
                      "",
                      "Concatenate files or standard input to standard output.",
                      "With no FILE, read standard input.",
                      "The FILE \"-\" represents stardard input.",
                      "",
                      "  -F, --freq <f>        Rainbow frequency (default: 2)",
+                     "  -V, --vfreq <v>       Vertical offset (default: 2)",
                      "  -S, --seed <s>        RNG seed, 0 means random (default: 0)",
                      "  -h, --help            Print this help message",
                      "  -v, --version         Print version information" ]
