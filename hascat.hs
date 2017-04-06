@@ -36,7 +36,7 @@ data Sample = Sample
     showVersion :: Bool,
     freq        :: Int,
     seed        :: Int,
-    vfreq       :: Int,
+    offset      :: Int,
     files       :: [String] }
 
 -- |The argument parser.
@@ -59,41 +59,41 @@ sample = Sample
          <> value 0 
          <> metavar "<s>" )
       <*> option auto
-          ( long "vfreq"
-         <> short 'V'
+          ( long "offset"
+         <> short 'O'
          <> value 2 
-         <> metavar "<v>" )
+         <> metavar "<o>" )
       <*> many (argument str (metavar "FILE")) -- 0 or more file arguments.
 
 -- |Decodes arguments and decides on what to do.
 handleArgs :: Sample -> IO ()
 
 -- Print help text if -h or --help is passed.
-handleArgs (Sample True _ f s v _)      = rainbowPrint f s v helpText
+handleArgs (Sample True _ f s o _)      = rainbowPrint f s o helpText
 
 -- Print version information if -v or --version is passed.
-handleArgs (Sample _ True f s v _) = rainbowPrint f s v $ "hascat " ++ version
+handleArgs (Sample _ True f s o _) = rainbowPrint f s o $ "hascat " ++ version
 
 -- Call rainbowPrint with stdin if we didn't get any files.
-handleArgs (Sample _ _ f s v []) = do 
+handleArgs (Sample _ _ f s o []) = do 
   stdin <- getContents
-  rainbowPrint f s v stdin
+  rainbowPrint f s o stdin
 
 -- Call rainbowPrint with the concatenated file contents.
-handleArgs (Sample _ _ f s v fs) = do
+handleArgs (Sample _ _ f s o fs) = do
   fileContents <- traverse getInput fs 
-  rainbowPrint f s v $ concat fileContents
+  rainbowPrint f s o $ concat fileContents
 
 -- |Rainbowifies the input and prints to stdout.
 -- f: the color frequency
 -- s: the lines in the input
 rainbowPrint :: Int -> Int -> Int -> String -> IO ()
-rainbowPrint f s v input = do
+rainbowPrint f s o input = do
   gen <- if s == 0 then getStdGen else return $ mkStdGen s
-  putStr $ unlines $ rainbowLns (rand v gen) f v $ lines input
+  putStr $ unlines $ rainbowLns (rand o gen) f o $ lines input
   putStr reset
     where rand :: Int -> StdGen -> Int
-          rand v g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
+          rand o g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
 
 -- |Reads stdin on "-"
 getInput :: String -> IO String
@@ -116,7 +116,7 @@ rainbowLn c f s = concat $ zipWith (:) s [ getEscape e | e <- [c,(c+f)..((length
 -- ls: the lines to rainbowify 
 rainbowLns :: Int -> Int -> Int -> [String] -> [String]
 rainbowLns _ _ _ [] = []
-rainbowLns c f v ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+v) f v (tail ls)
+rainbowLns c f o ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+o) f o (tail ls)
 
 -- |Function to get an AES from the escapes list.
 -- abs is needed to avoid negative index errors when vfreq is negative.
@@ -154,19 +154,19 @@ cStr c         = error $ "cStr: invalid Color: " ++ show c
 
 -- |Version number.
 version :: String
-version = "1.4.0"
+version = "1.4.1"
 
 -- |Help text.
 helpText :: String
 helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>]",
-                     "              [-V|--vfreq <v>] [FILE]",
+                     "              [-O|--offset <o>] [FILE]",
                      "",
                      "Concatenate files or standard input to standard output.",
                      "With no FILE, read standard input.",
                      "The FILE \"-\" represents stardard input.",
                      "",
                      "  -F, --freq <f>        Rainbow frequency (default: 2)",
-                     "  -V, --vfreq <v>       Vertical offset (default: 2)",
+                     "  -O, --offset <o>      Vertical offset (default: 2)",
                      "  -S, --seed <s>        RNG seed, 0 means random (default: 0)",
                      "  -h, --help            Print this help message",
                      "  -v, --version         Print version information" ]
