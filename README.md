@@ -16,7 +16,7 @@ It's `cat` but with rainbows and monads.
 
 ## Usage
 
-    hascat [OPTION]... [FILE]...
+    hascat [-h|--help] [-v|--version] [-F|--freq ARG] [FILE]
     
     Concatenate files or standard input to standard output.
     With no FILE, read standard input.
@@ -27,7 +27,6 @@ It's `cat` but with rainbows and monads.
 
 ## Todo
 
-- Improve command line argument parsing
 - Support non-truecolor terminals
 - Support inverting the color
 - Support fixed seeds
