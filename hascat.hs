@@ -86,7 +86,8 @@ rainbowPrint f s input = do
   gen <- if s == 0 then getStdGen else return $ mkStdGen s
   putStr $ unlines $ rainbowLns (rand gen) f $ lines input
   putStr reset
-    where rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number
+    where rand :: StdGen -> Int
+          rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number
 
 -- |Reads stdin on "-"
 getInput :: String -> IO String
