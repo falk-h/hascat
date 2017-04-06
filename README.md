@@ -18,16 +18,7 @@ It's `cat` but with rainbows and monads.
 
 ## Usage
 
-    hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>] [FILE]
-    
-    Concatenate files or standard input to standard output.
-    With no FILE, read standard input.
-    The FILE "-" represents stardard input.
-
-      -F, --freq <f>      Ranbow frequency (default: 2)
-      -S, --seed <s>      RNG seed, 0 means random (default: 0)
-      -h, --help          Print this help message
-      -v, --version       Print version information
+![Usage](img/usage.png)
 
 ## Todo
 
