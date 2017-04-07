@@ -4,9 +4,10 @@ module Main where
 import Options.Applicative
 import Data.Semigroup ((<>))
 import System.Random
+import Control.Monad
 
 -- |Let handleArgs decide on what to do.
-main :: IO()
+main :: IO ()
 main = handleArgs =<< execParser opts
   where 
     opts = info sample
@@ -25,6 +26,7 @@ data Sample = Sample
     freq        :: Int,
     seed        :: Int,
     offset      :: Int,
+    invert      :: Bool,
     files       :: [String] }
 
 -- |The argument parser.
@@ -51,37 +53,33 @@ sample = Sample
          <> short 'O'
          <> value 2 
          <> metavar "<o>" )
+      <*> switch
+          ( long "invert"
+         <> short 'i' )
       <*> many (argument str (metavar "FILE")) -- 0 or more file arguments.
 
 -- |Decodes arguments and decides on what to do.
 handleArgs :: Sample -> IO ()
-
--- Print help text if -h or --help is passed.
-handleArgs (Sample True _ f s o _)      = rainbowPrint f s o helpText
-
--- Print version information if -v or --version is passed.
-handleArgs (Sample _ True f s o _) = rainbowPrint f s o $ "hascat " ++ version
-
--- Call rainbowPrint with stdin if we didn't get any files.
-handleArgs (Sample _ _ f s o []) = do 
+handleArgs (Sample True _ f s o i _) = rainbowPrint f s o i helpText
+handleArgs (Sample _ True f s o i _) = rainbowPrint f s o i $ "hascat " ++ version
+handleArgs (Sample _ _ f s o i [])   = do 
   stdin <- getContents
-  rainbowPrint f s o stdin
-
--- Call rainbowPrint with the concatenated file contents.
-handleArgs (Sample _ _ f s o fs) = do
+  rainbowPrint f s o i stdin
+handleArgs (Sample _ _ f s o i fs)   = do
   fileContents <- traverse readFile' fs 
-  rainbowPrint f s o $ concat fileContents
+  rainbowPrint f s o i $ concat fileContents
 
 -- |Rainbowifies the input and prints to stdout.
 -- f: the color frequency
 -- s: the lines in the input
-rainbowPrint :: Int -> Int -> Int -> String -> IO ()
-rainbowPrint f s o input = do
+rainbowPrint :: Int -> Int -> Int -> Bool -> String -> IO ()
+rainbowPrint f s o i input = do
   gen <- if s == 0 then getStdGen else return $ mkStdGen s
-  putStr $ unlines $ rainbowLns (rand o gen) f o $ lines input
+  when i $ putStr "\ESC[7m" -- Invert color
+  putStr $ unlines $ rainbowLns (rand gen) f o $ lines input
   putStr reset
-    where rand :: Int -> StdGen -> Int
-          rand o g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
+    where rand :: StdGen -> Int
+          rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
 
 -- |Reads stdin on "-"
 readFile' :: String -> IO String
@@ -142,12 +140,12 @@ cStr c         = error $ "cStr: invalid Color: " ++ show c
 
 -- |Version number.
 version :: String
-version = "1.4.1"
+version = "1.5.0"
 
 -- |Help text.
 helpText :: String
 helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>]",
-                     "              [-O|--offset <o>] [FILE]",
+                     "              [-O|--offset <o>] [-i|--invert] [FILE]",
                      "",
                      "Concatenate files or standard input to standard output.",
                      "With no FILE, read standard input.",
@@ -156,5 +154,6 @@ helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [
                      "  -F, --freq <f>        Rainbow frequency (default: 2)",
                      "  -O, --offset <o>      Vertical offset (default: 2)",
                      "  -S, --seed <s>        RNG seed, 0 means random (default: 0)",
+                     "  -i, --invert          Invert output",
                      "  -h, --help            Print this help message",
                      "  -v, --version         Print version information" ]
