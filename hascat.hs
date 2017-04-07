@@ -19,18 +19,6 @@ type Color = [Int]
 -- |ANSI Escape Sequence.
 type AES = String
 
--- |Splits a line into Strings of a specific length.
--- (Currently not used, though it will probably come in handy later)
--- The last returned String may be shorter than the others
--- Takes two arguments:
--- n: how long the split strings should be
--- s: the string to split
--- splitN :: Int -> String -> [String]
--- splitN _ [] = []
--- splitN n s | n >= length s = [s]
---           | otherwise = take n s : splitN n (drop n s)
-                     
-
 data Sample = Sample
   { showHelp    :: Bool,
     showVersion :: Bool,
@@ -81,7 +69,7 @@ handleArgs (Sample _ _ f s o []) = do
 
 -- Call rainbowPrint with the concatenated file contents.
 handleArgs (Sample _ _ f s o fs) = do
-  fileContents <- traverse getInput fs 
+  fileContents <- traverse readFile' fs 
   rainbowPrint f s o $ concat fileContents
 
 -- |Rainbowifies the input and prints to stdout.
@@ -96,9 +84,9 @@ rainbowPrint f s o input = do
           rand o g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
 
 -- |Reads stdin on "-"
-getInput :: String -> IO String
-getInput "-"  = getContents 
-getInput file = readFile file
+readFile' :: String -> IO String
+readFile' "-"  = getContents 
+readFile' file = readFile file
 
 -- |Inserts rainbow escape sequences into a line.
 -- Takes three arguments:
