@@ -1,4 +1,4 @@
--- |Concatenates and rainbowifies files.
+-- Concatenates and rainbowifies files.
 module Main where
 
 import Options.Applicative
@@ -6,7 +6,7 @@ import Data.Semigroup ((<>))
 import System.Random
 import Control.Monad
 
--- |Let handleArgs decide on what to do.
+-- Let handleArgs decide on what to do.
 main :: IO ()
 main = handleArgs =<< execParser opts
   where 
@@ -14,10 +14,10 @@ main = handleArgs =<< execParser opts
       fullDesc
 
 
--- |An array containing Red, Green and Blue values.
+-- An array containing Red, Green and Blue values.
 type Color = [Int]
 
--- |ANSI Escape Sequence.
+-- ANSI Escape Sequence.
 type AES = String
 
 data Sample = Sample
@@ -29,7 +29,7 @@ data Sample = Sample
     invert      :: Bool,
     files       :: [String] }
 
--- |The argument parser.
+-- The argument parser.
 sample :: Parser Sample
 sample = Sample
       <$> switch
@@ -58,7 +58,7 @@ sample = Sample
          <> short 'i' )
       <*> many (argument str (metavar "FILE")) -- 0 or more file arguments.
 
--- |Decodes arguments and decides on what to do.
+-- Decodes arguments and decides on what to do.
 handleArgs :: Sample -> IO ()
 handleArgs (Sample True _ f s o i _) = rainbowPrint f s o i helpText
 handleArgs (Sample _ True f s o i _) = rainbowPrint f s o i $ "hascat " ++ version
@@ -69,7 +69,7 @@ handleArgs (Sample _ _ f s o i fs)   = do
   fileContents <- traverse readFile' fs 
   rainbowPrint f s o i $ concat fileContents
 
--- |Rainbowifies the input and prints to stdout.
+-- Rainbowifies the input and prints to stdout.
 -- f: the color frequency
 -- s: the lines in the input
 rainbowPrint :: Int -> Int -> Int -> Bool -> String -> IO ()
@@ -81,12 +81,12 @@ rainbowPrint f s o i input = do
     where rand :: StdGen -> Int
           rand g = fst (randomR (0, 257) g) -- Takes the StdGen and generates a number.
 
--- |Reads stdin on "-"
+-- Reads stdin on "-"
 readFile' :: String -> IO String
 readFile' "-"  = getContents 
 readFile' file = readFile file
 
--- |Inserts rainbow escape sequences into a line.
+-- Inserts rainbow escape sequences into a line.
 -- Takes three arguments:
 -- c: the color to start with
 -- f: how far to step in the colors array for every character
@@ -94,7 +94,7 @@ readFile' file = readFile file
 rainbowLn :: Int -> Int -> String -> String
 rainbowLn c f s = concat $ zipWith (:) s [ getEscape e | e <- [c,(c+f)..((length s * f) + c)] ]
 
--- |Applies ranbowLn to multiple lines.
+-- Applies ranbowLn to multiple lines.
 -- Takes four arguments:
 -- c: the color to start with
 -- f: how far to step in the colors array for every character
@@ -104,16 +104,16 @@ rainbowLns :: Int -> Int -> Int -> [String] -> [String]
 rainbowLns _ _ _ [] = []
 rainbowLns c f o ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+o) f o (tail ls)
 
--- |Function to get an AES from the escapes list.
+-- Function to get an AES from the escapes list.
 -- abs is needed to avoid negative index errors when vfreq is negative.
 getEscape :: Int -> AES
 getEscape n = escapes !! abs n
 
--- |Infinitely long list containing all the colors of the rainbow.
+-- Infinitely long list containing all the colors of the rainbow.
 escapes :: [AES]
 escapes = cycle $ map (cStr . colors) [0..257]
 
--- |Calculates Color 0-257 in the rainbow.
+-- Calculates Color 0-257 in the rainbow.
 colors :: Int -> Color
 colors n | h == 0 = [255, t, 0]
          | h == 1 = [q, 255, 0]
@@ -128,21 +128,21 @@ colors n | h == 0 = [255, t, 0]
            t = div (f*255) 43
            q = 255-t
 
--- | AES to reset the color to the default.
+-- AES to reset the color to the default.
 reset :: AES
 reset = "\ESC[0m"
         
--- |Constructs the AES for a given Color.
+-- Constructs the AES for a given Color.
 -- c: an array containing the values (0-255) for red, green and blue
 cStr :: Color -> AES
 cStr [r, g, b] = "\ESC[38;2;" ++ show r ++ ';':(show g ++ ';':(show b ++ "m"))
 cStr c         = error $ "cStr: invalid Color: " ++ show c
 
--- |Version number.
+-- Version number.
 version :: String
 version = "1.5.0"
 
--- |Help text.
+-- Help text.
 helpText :: String
 helpText = unlines [ "Usage: hascat [-h|--help] [-v|--version] [-F|--freq <f>] [-S|--seed <s>]",
                      "              [-O|--offset <o>] [-i|--invert] [FILE]",
