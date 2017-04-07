@@ -92,7 +92,7 @@ readFile' file = readFile file
 -- f: how far to step in the colors array for every character
 -- s: the line to rainbowify
 rainbowLn :: Int -> Int -> String -> String
-rainbowLn c f s = concat $ zipWith (:) s [ getEscape e | e <- [c,(c+f)..((length s * f) + c)] ]
+rainbowLn c f s = concat $ zipWith (:) s $ map getEscape [c,(c+f)..((length s * f) + c)]
 
 -- Applies ranbowLn to multiple lines.
 -- Takes four arguments:
