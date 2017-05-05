@@ -9,7 +9,7 @@ import Control.Monad
 -- Let handleArgs decide on what to do.
 main :: IO ()
 main = handleArgs =<< execParser opts
-  where 
+  where
     opts = info sample
       fullDesc
 
@@ -41,17 +41,17 @@ sample = Sample
       <*> option auto
           ( long "freq"
          <> short 'F'
-         <> value 2 
+         <> value 2
          <> metavar "<f>" )
       <*> option auto
           ( long "seed"
          <> short 'S'
-         <> value 0 
+         <> value 0
          <> metavar "<s>" )
       <*> option auto
           ( long "offset"
          <> short 'O'
-         <> value 2 
+         <> value 2
          <> metavar "<o>" )
       <*> switch
           ( long "invert"
@@ -62,11 +62,11 @@ sample = Sample
 handleArgs :: Sample -> IO ()
 handleArgs (Sample True _ f s o i _) = rainbowPrint f s o i helpText
 handleArgs (Sample _ True f s o i _) = rainbowPrint f s o i $ "hascat " ++ version
-handleArgs (Sample _ _ f s o i [])   = do 
+handleArgs (Sample _ _ f s o i [])   = do
   stdin <- getContents
   rainbowPrint f s o i stdin
 handleArgs (Sample _ _ f s o i fs)   = do
-  fileContents <- traverse readFile' fs 
+  fileContents <- traverse readFile' fs
   rainbowPrint f s o i $ concat fileContents
 
 -- Rainbowifies the input and prints to stdout.
@@ -83,7 +83,7 @@ rainbowPrint f s o i input = do
 
 -- Reads stdin on "-"
 readFile' :: String -> IO String
-readFile' "-"  = getContents 
+readFile' "-"  = getContents
 readFile' file = readFile file
 
 -- Inserts rainbow escape sequences into a line.
@@ -99,7 +99,7 @@ rainbowLn c f s = concat $ zipWith (:) s $ map getEscape [c,(c+f)..((length s * 
 -- c: the color to start with
 -- f: how far to step in the colors array for every character
 -- h: how far to step in the colors array for every line
--- ls: the lines to rainbowify 
+-- ls: the lines to rainbowify
 rainbowLns :: Int -> Int -> Int -> [String] -> [String]
 rainbowLns _ _ _ [] = []
 rainbowLns c f o ls = (getEscape c ++ rainbowLn (c+f) f (head ls)) : rainbowLns (c+o) f o (tail ls)
@@ -122,7 +122,7 @@ colors n | h == 0 = [255, t, 0]
          | h == 4 = [t, 0, 255]
          | h == 5 = [255, 0, q]
          | otherwise = error $ "colors: can't get color for " ++ show n
-         where 
+         where
            h = div n 43
            f = n-43*h
            t = div (f*255) 43
@@ -131,7 +131,7 @@ colors n | h == 0 = [255, t, 0]
 -- AES to reset the color to the default.
 reset :: AES
 reset = "\ESC[0m"
-        
+
 -- Constructs the AES for a given Color.
 -- c: an array containing the values (0-255) for red, green and blue
 cStr :: Color -> AES
